@@ -19,7 +19,27 @@ func TestParser_ParseStatement(t *testing.T) {
 				Star: true,
 			}},
 			FromItems: &sqlparser.TableName{
-				Name: &sqlparser.Ident{Name: "tbl"},
+				Name: &sqlparser.Ident{Name: "tbl", Quoted: false},
+			},
+		})
+
+		// PosgreSQL special
+		AssertParseStatement(t, `SELECT * FROM "tbl"`, &sqlparser.SelectStatement{
+			Columns: &sqlparser.OutputNames{&sqlparser.ResultColumn{
+				Star: true,
+			}},
+			FromItems: &sqlparser.TableName{
+				Name: &sqlparser.Ident{Name: "tbl", Quoted: true},
+			},
+		})
+
+		// MySQL special
+		AssertParseStatement(t, "SELECT * FROM `tbl`", &sqlparser.SelectStatement{
+			Columns: &sqlparser.OutputNames{&sqlparser.ResultColumn{
+				Star: true,
+			}},
+			FromItems: &sqlparser.TableName{
+				Name: &sqlparser.Ident{Name: "tbl", Quoted: true},
 			},
 		})
 
@@ -76,6 +96,53 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &sqlparser.Ident{Name: "tbl"},
 			},
 		})
+
+		// PosgreSQL
+		AssertParseStatement(t, `SELECT "foo" AS "FOO", bar baz, "tbl".* FROM "tbl"`, &sqlparser.SelectStatement{
+			Columns: &sqlparser.OutputNames{
+				&sqlparser.ResultColumn{
+					Expr:  &sqlparser.Ident{Name: "foo", Quoted: true},
+					Alias: &sqlparser.Ident{Name: "FOO", Quoted: true},
+				},
+				&sqlparser.ResultColumn{
+					Expr:  &sqlparser.Ident{Name: "bar"},
+					Alias: &sqlparser.Ident{Name: "baz"},
+				},
+				&sqlparser.ResultColumn{
+					Expr: &sqlparser.QualifiedRef{
+						Table: &sqlparser.Ident{Name: "tbl", Quoted: true},
+						Star:  true,
+					},
+				},
+			},
+			FromItems: &sqlparser.TableName{
+				Name: &sqlparser.Ident{Name: "tbl", Quoted: true},
+			},
+		})
+
+		// MySQL
+		AssertParseStatement(t, "SELECT `foo` AS `FOO`, bar baz, `tbl`.* FROM `tbl`", &sqlparser.SelectStatement{
+			Columns: &sqlparser.OutputNames{
+				&sqlparser.ResultColumn{
+					Expr:  &sqlparser.Ident{Name: "foo", Quoted: true},
+					Alias: &sqlparser.Ident{Name: "FOO", Quoted: true},
+				},
+				&sqlparser.ResultColumn{
+					Expr:  &sqlparser.Ident{Name: "bar"},
+					Alias: &sqlparser.Ident{Name: "baz"},
+				},
+				&sqlparser.ResultColumn{
+					Expr: &sqlparser.QualifiedRef{
+						Table: &sqlparser.Ident{Name: "tbl", Quoted: true},
+						Star:  true,
+					},
+				},
+			},
+			FromItems: &sqlparser.TableName{
+				Name: &sqlparser.Ident{Name: "tbl", Quoted: true},
+			},
+		})
+
 		AssertParseStatement(t, `SELECT * FROM tbl tbl2`, &sqlparser.SelectStatement{
 			Columns: &sqlparser.OutputNames{&sqlparser.ResultColumn{
 				Star: true,

@@ -39,6 +39,8 @@ func (l *Lexer) Lex() (pos Pos, token Token, lit string) {
 			return l.lexUnquotedIdent(l.pos, "")
 		} else if ch == '"' {
 			return l.lexQuotedIdent()
+		} else if ch == '`' {
+			return l.lexQuotedIdent()
 		} else if ch == '\'' {
 			return l.lexString()
 		} else if ch == '?' || ch == ':' || ch == '@' || ch == '$' {
@@ -127,17 +129,20 @@ func (l *Lexer) lexUnquotedIdent(pos Pos, prefix string) (Pos, Token, string) {
 
 func (l *Lexer) lexQuotedIdent() (Pos, Token, string) {
 	ch, pos := l.read()
-	assert(ch == '"')
+	assert(ch == '"' || ch == '`')
+
+	// quote: " or ` for PostgreSQL and MySQL
+	quote := ch
 
 	l.buf.Reset()
 	for {
 		ch, _ := l.read()
 		if ch == -1 {
-			return pos, ILLEGAL, `"` + l.buf.String()
-		} else if ch == '"' {
-			if l.peek() == '"' { // escaped quote
+			return pos, ILLEGAL, string(quote) + l.buf.String()
+		} else if ch == quote {
+			if l.peek() == quote { // escaped quote
 				l.read()
-				l.buf.WriteRune('"')
+				l.buf.WriteRune(quote)
 				continue
 			}
 			return pos, QIDENT, l.buf.String()
