@@ -95,6 +95,8 @@ func (p *Parser) parseInsertStatement() (_ *InsertStatement, err error) {
 
 	var stmt InsertStatement
 
+	// In MySQL the `INSERT INTO`, the `INTO` is optional.
+	// https://dev.mysql.com/doc/refman/8.0/en/insert.html
 	if p.peek() == INTO {
 		p.lex()
 	}
