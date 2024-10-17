@@ -936,6 +936,22 @@ func (p *Parser) ParseExpr() (expr Expr, err error) {
 func (p *Parser) parseOperand() (expr Expr, err error) {
 	_, tok, lit := p.lex()
 	switch tok {
+	case VALUES:
+		_, tok, lit = p.lex()
+		var expr Expr
+		if tok == LP {
+			p.unlex()
+			var err error
+			expr, err = p.parseParenExpr()
+			if err != nil {
+				return nil, err
+			}
+			expr = expr.(*ParenExpr).X
+		} else {
+			return nil, p.errorExpected(p.pos, p.tok, "left paren")
+		}
+		return &Call{Name: &Ident{Name: "VALUES"}, Args: []Expr{expr}}, nil
+
 	case IDENT, QIDENT:
 		ident := identByNameAndTok(lit, tok)
 		if p.peek() == DOT {
